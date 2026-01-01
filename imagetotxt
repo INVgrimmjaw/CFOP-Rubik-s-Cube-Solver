@@ -1,0 +1,69 @@
+import cv2
+import numpy as np
+
+# Output file
+OUTPUT_FILE = "cube_state.txt"
+
+# HSV color ranges (tuned later if needed)
+COLOR_RANGES = {
+    'W': ((0, 0, 200), (180, 30, 255)),
+    'Y': ((20, 100, 100), (35, 255, 255)),
+    'R': ((0, 100, 100), (10, 255, 255)),
+    'O': ((10, 100, 100), (20, 255, 255)),
+    'G': ((40, 50, 50), (80, 255, 255)),
+    'B': ((90, 50, 50), (130, 255, 255))
+}
+
+def detect_color(hsv_pixel):
+    for color, (lower, upper) in COLOR_RANGES.items():
+        if np.all(hsv_pixel >= lower) and np.all(hsv_pixel <= upper):
+            return color
+    return 'X'  # unknown
+
+cap = cv2.VideoCapture(0)
+
+cube_state = []
+
+print("Capture 9 stickers per face (U D L R F B)")
+print("Press SPACE to capture a sticker, ENTER to move to next face")
+
+while len(cube_state) < 54:
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    h, w, _ = frame.shape
+    cx, cy = w // 2, h // 2
+
+    # Draw center box
+    cv2.rectangle(frame, (cx-20, cy-20), (cx+20, cy+20), (0,255,0), 2)
+
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    center_pixel = hsv[cy, cx]
+
+    detected = detect_color(center_pixel)
+    cv2.putText(frame, f"Detected: {detected}", (30, 40),
+                cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
+
+    cv2.imshow("Cube Scanner", frame)
+    key = cv2.waitKey(1)
+
+    if key == 32:  # SPACE
+        cube_state.append(detected)
+        print(f"Captured {detected} ({len(cube_state)}/54)")
+
+    elif key == 13:  # ENTER
+        print("Next face")
+
+    elif key == 27:  # ESC
+        break
+
+cap.release()
+cv2.destroyAllWindows()
+
+# Write to file
+with open(OUTPUT_FILE, "w") as f:
+    f.write("".join(cube_state))
+
+print("\nCube state written to cube_state.txt")
+print("State:", "".join(cube_state))
