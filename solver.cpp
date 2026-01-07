@@ -336,91 +336,82 @@ void solveWhiteCross(Cube& c) {
         }
     }
 }
-/*
-bool FRslotSolved(const Cube& c) {
-    return c.face[4][8] == center(c,4) &&
-           c.face[3][6] == center(c,3) &&
-           c.face[1][2] == 'W';
+bool isWhite(char a, char b, char c) {
+    return (a=='W' || b=='W' || c=='W');
 }
-void extractFRCorner(Cube& c) {
-    moveR(c);
-    moveU(c);
-    moveRi(c);
+bool whiteCornerFRSolved(const Cube& c) {
+    return c.face[1][2]=='W' &&
+           c.face[4][8]==center(c,4) &&
+           c.face[3][6]==center(c,3);
 }
-void extractFREdge(Cube& c) {
+void insertWhiteCornerFR(Cube& c) {
     moveU(c);
     moveR(c);
     moveUi(c);
     moveRi(c);
-    moveUi(c);
-    moveFi(c);
-    moveU(c);
-    moveF(c);
 }
-void placeCornerAboveFR(Cube& c) {
+void removeWrongWhiteCornerFR(Cube& c) {
+    moveR(c);
+    moveU(c);
+    moveRi(c);
+}
+void bringWhiteCornerToTop(Cube& c) {
+    if (isWhite(c.face[0][8], c.face[4][2], c.face[3][2])) return;
+
     for (int i = 0; i < 4; i++) {
-        if (c.face[0][8] == 'W') return;
+        if (isWhite(c.face[0][8], c.face[4][2], c.face[3][2]))
+            return;
         moveU(c);
     }
+
+    removeWrongWhiteCornerFR(c);
 }
-void placeEdgeAboveFR(Cube& c) {
-    for (int i = 0; i < 4; i++) {
-        if (c.face[0][5] == center(c,3)) return;
-        moveU(c);
+void solveWhiteCorners(Cube& c) {
+    int guard = 0;
+
+    while (guard++ < 40) {
+        if (whiteCornerFRSolved(c)) {
+            moveU(c);
+            continue;
+        }
+
+        bringWhiteCornerToTop(c);
+
+        if (isWhite(c.face[0][8], c.face[4][2], c.face[3][2])) {
+            insertWhiteCornerFR(c);
+        }
+
+        if (whiteCornerFRSolved(c)) {
+            moveU(c);
+        }
+
+        bool done = true;
+        for (int i = 0; i < 4; i++) {
+            if (!whiteCornerFRSolved(c)) done = false;
+            moveU(c);
+        }
+        if (done) break;
     }
 }
-void insertF2L_Right(Cube& c) {
+bool secondLayerSolved(const Cube& c) {
+    int faces[4] = {4, 3, 5, 2};
+    for (int f : faces) {
+        if (c.face[f][3] != center(c,f)) return false;
+        if (c.face[f][5] != center(c,f)) return false;
+    }
+    return true;
+}
+void insertSecondLayerLeft(Cube& c) {
+    moveUi(c);
+    moveLi(c);
     moveU(c);
-    moveR(c);
-    moveUi(c);
-    moveRi(c);
-}
-void insertF2L_Front(Cube& c) {
-    moveUi(c);
-    moveFi(c);
-    moveU(c);
-    moveF(c);
-}
-void insertF2L_WhiteFront(Cube& c) {
-    moveR(c); moveU(c); moveRi(c);
-}
-void insertF2L_WhiteRight(Cube& c) {
-    moveFi(c); moveUi(c); moveF(c);
-}
-bool isFREdge(char a, char b, const Cube& c) {
-    return (a == center(c,4) && b == center(c,3)) ||
-           (a == center(c,3) && b == center(c,4));
-}
-int findFREdgePos(const Cube& c) {
-    if (isFREdge(c.face[0][7], c.face[4][1], c)) return 0;
-    if (isFREdge(c.face[0][5], c.face[3][1], c)) return 1;
-    if (isFREdge(c.face[0][1], c.face[5][1], c)) return 2;
-    if (isFREdge(c.face[0][3], c.face[2][1], c)) return 3;
-    if (isFREdge(c.face[4][5], c.face[3][3], c)) return 4;
-    return -1;
-}
-bool isFREdgeFlipped(const Cube& c, int pos) {
-    char F = center(c,4);
-
-    if (pos == 0) return c.face[0][7] != F;
-    if (pos == 1) return c.face[0][5] != F;
-    if (pos == 2) return c.face[0][1] != F;
-    if (pos == 3) return c.face[0][3] != F;
-    if (pos == 4) return c.face[4][5] != F;
-
-    return false;
-}
-void fixFlippedFREdge(Cube& c) {
-    moveU(c);
-    moveR(c);
-    moveUi(c);
-    moveRi(c);
-    moveUi(c);
-    moveFi(c);
+    moveL(c);
     moveU(c);
     moveF(c);
+    moveUi(c);
+    moveFi(c);
 }
-void fixFlippedFREdge(Cube& c) {
+void insertSecondLayerRight(Cube& c) {
     moveU(c);
     moveR(c);
     moveUi(c);
@@ -430,207 +421,212 @@ void fixFlippedFREdge(Cube& c) {
     moveU(c);
     moveF(c);
 }
-int findFRCornerPos(const Cube& c) {
-    if (isFRCorner(c.face[0][8], c.face[4][2], c.face[3][2], c)) return 0;
-    if (isFRCorner(c.face[0][2], c.face[3][2], c.face[5][2], c)) return 1;
-    if (isFRCorner(c.face[0][0], c.face[5][2], c.face[2][2], c)) return 2;
-    if (isFRCorner(c.face[0][6], c.face[2][2], c.face[4][2], c)) return 3;
-    if (isFRCorner(c.face[1][2], c.face[4][8], c.face[3][6], c)) return 4;
-    return -1;
+void removeWrongSecondLayerEdge(Cube& c) {
+    insertSecondLayerRight(c);
 }
-bool isFRPairFormed(const Cube& c) {
-    return c.face[4][5] == center(c,4) &&
-           c.face[3][3] == center(c,3) &&
-           c.face[4][8] == center(c,4) &&
-           c.face[3][6] == center(c,3) &&
-           c.face[1][2] == 'W';
-}
-bool isFRPairMisoriented(const Cube& c) {
-    if (!isFRPairFormed(c)) return false;
-
-    return c.face[1][2] != 'W';
-}
-void unpairFR(Cube& c) {
-    moveR(c);
-    moveU(c);
-    moveRi(c);
-}
-
-/*void solveF2L_FR(Cube& c) {
-    if (FRslotSolved(c)) return;
-
-    extractFRCorner(c);
-    extractFREdge(c);
-
-    placeCornerAboveFR(c);
-    placeEdgeAboveFR(c);
-
-    if (c.face[0][8] == 'W') {
-        if (c.face[0][5] == center(c,3))
-            insertF2L_Right(c);
-        else
-            insertF2L_Front(c);
-    }
-    else if (c.face[4][2] == 'W') {
-        insertF2L_WhiteFront(c);
-    }
-    else if (c.face[3][2] == 'W') {
-        insertF2L_WhiteRight(c);
-    }
-}*/
-struct F2LState {
-    int cornerPos;
-    int cornerOri;
-    int edgePos;
-    int edgeOri;
-};
-
-long long encodeF2L(const F2LState& s) {
-    return s.cornerPos * 1000LL +
-           s.cornerOri * 100LL +
-           s.edgePos * 10LL +
-           s.edgeOri;
-}
-bool isFRCorner(char a, char b, char c, const Cube& cube) {
-    char w = 'W';
-    char f = center(cube,4);
-    char r = center(cube,3);
-    set<char> s = {a,b,c};
-    return s == set<char>{w,f,r};
-}
-
-int findFRCornerPos(const Cube& c) {
-    if (isFRCorner(c.face[0][8], c.face[4][2], c.face[3][2], c)) return 0;
-    if (isFRCorner(c.face[0][2], c.face[3][2], c.face[5][2], c)) return 1;
-    if (isFRCorner(c.face[0][0], c.face[5][2], c.face[2][2], c)) return 2;
-    if (isFRCorner(c.face[0][6], c.face[2][2], c.face[4][2], c)) return 3;
-    if (isFRCorner(c.face[1][2], c.face[4][8], c.face[3][6], c)) return 4;
-    return -1;
-}
-int findFREdgePos(const Cube& c) {
+bool alignSecondLayerEdge(Cube& c) {
     char f = center(c,4);
     char r = center(c,3);
 
-    if ((c.face[0][5]==f && c.face[3][1]==r) ||
-        (c.face[0][5]==r && c.face[3][1]==f)) return 0;
-
-    if ((c.face[0][7]==f && c.face[4][1]==r) ||
-        (c.face[0][7]==r && c.face[4][1]==f)) return 1;
-
-    if ((c.face[0][3]==f && c.face[2][1]==r) ||
-        (c.face[0][3]==r && c.face[2][1]==f)) return 2;
-
-    if ((c.face[0][1]==f && c.face[5][1]==r) ||
-        (c.face[0][1]==r && c.face[5][1]==f)) return 3;
-
-    if ((c.face[4][5]==f && c.face[3][3]==r) ||
-        (c.face[4][5]==r && c.face[3][3]==f)) return 4;
-
-    return -1;
-}
-int isFREdgeFlipped(const Cube& c, int pos) {
-    if (pos == 4)
-        return c.face[4][5] != center(c,4);
-    return c.face[0][5] != center(c,4);
-}
-unordered_map<long long, vector<string>> F2L_TABLE = {
-    {0000, {"U","R","U'","R'"}},
-    {0001, {"U'","F'","U","F"}},
-    {0010, {"U","R","U'","R'","U'","F'","U","F"}},
-    {0011, {"U'","F'","U","F","U","R","U'","R'"}},
-    {0100, {"R","U","R'"}},
-    {0101, {"F'","U'","F"}},
-    {4000, {"R","U","R'","U'","R","U","R'"}},
-    {4001, {"F'","U'","F","U","F'","U'","F"}},
-};
-void applyAlg(Cube& c, const vector<string>& alg) {
-    for (auto &m : alg) {
-        if (m=="U") moveU(c);
-        else if (m=="U'") moveUi(c);
-        else if (m=="R") moveR(c);
-        else if (m=="R'") moveRi(c);
-        else if (m=="F") moveF(c);
-        else if (m=="F'") moveFi(c);
-    }
-}
-void solveF2L_FR(Cube& c) {
-    if (FRslotSolved(c)) return;
-
-    F2LState s;
-    s.cornerPos = findFRCornerPos(c);
-    s.edgePos   = findFREdgePos(c);
-    s.cornerOri = (c.face[0][8] == 'W') ? 0 : 1;
-    s.edgeOri   = isFREdgeFlipped(c, s.edgePos);
-
-    long long key = encodeF2L(s);
-
-    if (!F2L_TABLE.count(key)) {
-        cerr << "Unhandled F2L case: " << key << endl;
-        return;
-    }
-
-    applyAlg(c, F2L_TABLE[key]);
-}
-
-void solveF2L(Cube& c) {
     for (int i = 0; i < 4; i++) {
-        solveF2L_FR(c);
+        if (c.face[0][7] == f && c.face[4][1] != 'Y') {
+            if (c.face[4][1] == r) {
+                insertSecondLayerRight(c);
+            } else {
+                insertSecondLayerLeft(c);
+            }
+            return true;
+        }
         moveU(c);
     }
+    return false;
 }
-bool yellowCross(const Cube& c) {
-    return c.face[0][1]=='Y' &&
-           c.face[0][3]=='Y' &&
-           c.face[0][5]=='Y' &&
-           c.face[0][7]=='Y';
+void solveSecondLayer(Cube& c) {
+    int guard = 0;
+
+    while (!secondLayerSolved(c) && guard++ < 40) {
+
+        if (alignSecondLayerEdge(c))
+            continue;
+
+        bool fixed = false;
+        for (int i = 0; i < 4; i++) {
+            if (c.face[4][5] != center(c,4) &&
+                c.face[3][3] != center(c,3)) {
+                removeWrongSecondLayerEdge(c);
+                fixed = true;
+                break;
+            }
+            moveU(c);
+        }
+
+        if (!fixed)
+            moveU(c);
+    }
+}
+bool yellowCrossSolved(const Cube& c) {
+    return c.face[0][1] == 'Y' &&
+           c.face[0][3] == 'Y' &&
+           c.face[0][5] == 'Y' &&
+           c.face[0][7] == 'Y';
+}
+int yellowCrossPattern(const Cube& c) {
+    bool up    = c.face[0][1] == 'Y';
+    bool left  = c.face[0][3] == 'Y';
+    bool right = c.face[0][5] == 'Y';
+    bool down  = c.face[0][7] == 'Y';
+
+    if (up && left && right && down) return 3; // cross
+    if (left && right) return 2;               // line
+    if (up && right) return 1;                 // L-shape
+    if (up) return 0;                           // dot
+    return 0;
 }
 void algYellowCross(Cube& c) {
-    moveF(c); moveR(c); moveU(c);
-    moveRi(c); moveUi(c); moveFi(c);
+    moveF(c);
+    moveR(c);
+    moveU(c);
+    moveRi(c);
+    moveUi(c);
+    moveFi(c);
 }
 void solveYellowCross(Cube& c) {
     int guard = 0;
-    while (!yellowCross(c) && guard++ < 5)
-        algYellowCross(c);
-}
-void algSune(Cube& c) {
-    moveR(c); moveU(c); moveRi(c);
-    moveU(c); moveR(c); moveU(c);
-    moveU(c); moveRi(c);
-}
-void algAntiSune(Cube& c) {
-    moveRi(c); moveUi(c); moveR(c);
-    moveUi(c); moveRi(c); moveU(c);
-    moveU(c); moveR(c);
-}
-void solveOLL(Cube& c) {
-    solveYellowCross(c);
-    int guard = 0;
-    while (!ollSolved(c) && guard++ < 10) {
-        if (c.face[0][2] == 'Y') algSune(c);
-        else algAntiSune(c);
+
+    while (!yellowCrossSolved(c) && guard++ < 6) {
+        int pattern = yellowCrossPattern(c);
+
+        if (pattern == 0) {
+            algYellowCross(c);
+        }
+        else if (pattern == 1) {
+            algYellowCross(c);
+        }
+        else if (pattern == 2) {
+            algYellowCross(c);
+        }
+        else if (pattern == 3) {
+            return;
+        }
+
+        moveU(c);
     }
 }
-void algCornerPLL(Cube& c) {
-    moveU(c); moveR(c); moveUi(c);
-    moveLi(c); moveU(c);
-    moveRi(c); moveUi(c); moveL(c);
+int countAlignedYellowEdges(const Cube& c) {
+    int cnt = 0;
+    if (c.face[4][1] == center(c,4)) cnt++; // F
+    if (c.face[3][1] == center(c,3)) cnt++; // R
+    if (c.face[5][1] == center(c,5)) cnt++; // B
+    if (c.face[2][1] == center(c,2)) cnt++; // L
+    return cnt;
 }
-void solvePLLCorners(Cube& c) {
+bool yellowEdgesAligned(const Cube& c) {
+    return countAlignedYellowEdges(c) == 4;
+}
+void algPLL_EdgeCycle(Cube& c) {
+    moveR(c);
+    moveU(c);
+    moveRi(c);
+    moveU(c);
+    moveR(c);
+    moveU(c);
+    moveU(c);
+    moveRi(c);
+    moveU(c);
+}
+void alignTwoEdges(Cube& c) {
+    for (int i = 0; i < 4; i++) {
+        if (countAlignedYellowEdges(c) >= 2)
+            return;
+        moveU(c);
+    }
+}
+void alignYellowCrossEdges(Cube& c) {
     int guard = 0;
-    while (guard++ < 6)
-        algCornerPLL(c);
+
+    while (!yellowEdgesAligned(c) && guard++ < 10) {
+
+        alignTwoEdges(c);
+
+        int aligned = countAlignedYellowEdges(c);
+
+        if (aligned == 4) return;
+
+        if (aligned == 2) {
+            algPLL_EdgeCycle(c);
+        } else {
+            algPLL_EdgeCycle(c);
+        }
+    }
 }
-void algUa(Cube& c) {
-    moveR(c); moveUi(c); moveR(c);
-    moveU(c); moveR(c); moveU(c);
-    moveR(c); moveUi(c); moveRi(c);
-    moveUi(c); moveR(c); moveR(c);
+bool yellowCornersPositioned(const Cube& c) {
+    char f = center(c,4);
+    char r = center(c,3);
+    char b = center(c,5);
+    char l = center(c,2);
+
+    int correct = 0;
+
+    auto ok = [&](char a, char b, char c, char x, char y, char z) {
+        set<char> s1 = {a,b,c};
+        set<char> s2 = {x,y,z};
+        return s1 == s2;
+    };
+
+    if (ok(c.face[0][8], c.face[4][2], c.face[3][2], 'Y', f, r)) correct++;
+    if (ok(c.face[0][2], c.face[3][2], c.face[5][2], 'Y', r, b)) correct++;
+    if (ok(c.face[0][0], c.face[5][2], c.face[2][2], 'Y', b, l)) correct++;
+    if (ok(c.face[0][6], c.face[2][2], c.face[4][2], 'Y', l, f)) correct++;
+
+    return correct == 4;
 }
-void solvePLL(Cube& c) {
-    solvePLLCorners(c);
+bool rotateUntilOneCornerMatches(Cube& c) {
+    char f = center(c,4);
+    char r = center(c,3);
+
+    for (int i = 0; i < 4; i++) {
+        set<char> s = {c.face[0][8], c.face[4][2], c.face[3][2]};
+        if (s == set<char>{'Y',f,r}) return true;
+        moveU(c);
+    }
+    return false;
+}
+void solveYellowCornerPositions(Cube& c) {
     int guard = 0;
-    while (!cubeSolved(c) && guard++ < 8)algUa(c);
+
+    while (!yellowCornersPositioned(c) && guard++ < 10) {
+
+        if (!rotateUntilOneCornerMatches(c)) {
+            algPLL_CornerCycle(c);
+            continue;
+        }
+
+        algPLL_CornerCycle(c);
+    }
+}
+bool yellowCornersOriented(const Cube& c) {
+    return c.face[0][0]=='Y' &&
+           c.face[0][2]=='Y' &&
+           c.face[0][6]=='Y' &&
+           c.face[0][8]=='Y';
+}
+void algTwistCorner(Cube& c) {
+    moveR(c);
+    moveU(c);
+    moveRi(c);
+    moveUi(c);
+}
+void orientYellowCorners(Cube& c) {
+    int guard = 0;
+
+    while (!yellowCornersOriented(c) && guard++ < 30) {
+
+        if (c.face[0][8] != 'Y') {
+            algTwistCorner(c);
+            algTwistCorner(c);
+        }
+        moveU(c);
+    }
 }
 int main() {
     Cube cube;
@@ -639,15 +635,25 @@ int main() {
         return 1;
     }
 
-    cout << "Initial Cube:\n";
-    cube.printCube();
+    solveWhiteCross(cube);
+    solveWhiteCorners(cube);
+    solveSecondLayer(cube);
+    solveYellowCross(cube);
+    alignYellowCrossEdges(cube);
+    solveYellowCornerPositions(cube);
+    orientYellowCorners(cube);
 
-    // === CFOP ===
-    if(!whiteCrossSolved(cube)) solveWhiteCross(cube);
-    if(!f2lSolved(cube)) solveF2L(cube);
-    if(!ollSolved(cube)) solveOLL(cube);
-    solvePLL(cube);
-    cube.printCube();
+    ofstream fout("solution.txt");
+    if (!fout.is_open()) {
+        return 1;
+    }
+
+    for (const string& move : moveLog) {
+        fout << move << " ";
+    }
+    fout << "\n";
+    fout.close();
 
     return 0;
 }
+
