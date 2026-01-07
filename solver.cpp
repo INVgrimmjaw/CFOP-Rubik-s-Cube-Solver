@@ -336,6 +336,7 @@ void solveWhiteCross(Cube& c) {
         }
     }
 }
+/*
 bool FRslotSolved(const Cube& c) {
     return c.face[4][8] == center(c,4) &&
            c.face[3][6] == center(c,3) &&
@@ -386,7 +387,76 @@ void insertF2L_WhiteFront(Cube& c) {
 void insertF2L_WhiteRight(Cube& c) {
     moveFi(c); moveUi(c); moveF(c);
 }
-void solveF2L_FR(Cube& c) {
+bool isFREdge(char a, char b, const Cube& c) {
+    return (a == center(c,4) && b == center(c,3)) ||
+           (a == center(c,3) && b == center(c,4));
+}
+int findFREdgePos(const Cube& c) {
+    if (isFREdge(c.face[0][7], c.face[4][1], c)) return 0;
+    if (isFREdge(c.face[0][5], c.face[3][1], c)) return 1;
+    if (isFREdge(c.face[0][1], c.face[5][1], c)) return 2;
+    if (isFREdge(c.face[0][3], c.face[2][1], c)) return 3;
+    if (isFREdge(c.face[4][5], c.face[3][3], c)) return 4;
+    return -1;
+}
+bool isFREdgeFlipped(const Cube& c, int pos) {
+    char F = center(c,4);
+
+    if (pos == 0) return c.face[0][7] != F;
+    if (pos == 1) return c.face[0][5] != F;
+    if (pos == 2) return c.face[0][1] != F;
+    if (pos == 3) return c.face[0][3] != F;
+    if (pos == 4) return c.face[4][5] != F;
+
+    return false;
+}
+void fixFlippedFREdge(Cube& c) {
+    moveU(c);
+    moveR(c);
+    moveUi(c);
+    moveRi(c);
+    moveUi(c);
+    moveFi(c);
+    moveU(c);
+    moveF(c);
+}
+void fixFlippedFREdge(Cube& c) {
+    moveU(c);
+    moveR(c);
+    moveUi(c);
+    moveRi(c);
+    moveUi(c);
+    moveFi(c);
+    moveU(c);
+    moveF(c);
+}
+int findFRCornerPos(const Cube& c) {
+    if (isFRCorner(c.face[0][8], c.face[4][2], c.face[3][2], c)) return 0;
+    if (isFRCorner(c.face[0][2], c.face[3][2], c.face[5][2], c)) return 1;
+    if (isFRCorner(c.face[0][0], c.face[5][2], c.face[2][2], c)) return 2;
+    if (isFRCorner(c.face[0][6], c.face[2][2], c.face[4][2], c)) return 3;
+    if (isFRCorner(c.face[1][2], c.face[4][8], c.face[3][6], c)) return 4;
+    return -1;
+}
+bool isFRPairFormed(const Cube& c) {
+    return c.face[4][5] == center(c,4) &&
+           c.face[3][3] == center(c,3) &&
+           c.face[4][8] == center(c,4) &&
+           c.face[3][6] == center(c,3) &&
+           c.face[1][2] == 'W';
+}
+bool isFRPairMisoriented(const Cube& c) {
+    if (!isFRPairFormed(c)) return false;
+
+    return c.face[1][2] != 'W';
+}
+void unpairFR(Cube& c) {
+    moveR(c);
+    moveU(c);
+    moveRi(c);
+}
+
+/*void solveF2L_FR(Cube& c) {
     if (FRslotSolved(c)) return;
 
     extractFRCorner(c);
@@ -407,7 +477,101 @@ void solveF2L_FR(Cube& c) {
     else if (c.face[3][2] == 'W') {
         insertF2L_WhiteRight(c);
     }
+}*/
+struct F2LState {
+    int cornerPos;
+    int cornerOri;
+    int edgePos;
+    int edgeOri;
+};
+
+long long encodeF2L(const F2LState& s) {
+    return s.cornerPos * 1000LL +
+           s.cornerOri * 100LL +
+           s.edgePos * 10LL +
+           s.edgeOri;
 }
+bool isFRCorner(char a, char b, char c, const Cube& cube) {
+    char w = 'W';
+    char f = center(cube,4);
+    char r = center(cube,3);
+    set<char> s = {a,b,c};
+    return s == set<char>{w,f,r};
+}
+
+int findFRCornerPos(const Cube& c) {
+    if (isFRCorner(c.face[0][8], c.face[4][2], c.face[3][2], c)) return 0;
+    if (isFRCorner(c.face[0][2], c.face[3][2], c.face[5][2], c)) return 1;
+    if (isFRCorner(c.face[0][0], c.face[5][2], c.face[2][2], c)) return 2;
+    if (isFRCorner(c.face[0][6], c.face[2][2], c.face[4][2], c)) return 3;
+    if (isFRCorner(c.face[1][2], c.face[4][8], c.face[3][6], c)) return 4;
+    return -1;
+}
+int findFREdgePos(const Cube& c) {
+    char f = center(c,4);
+    char r = center(c,3);
+
+    if ((c.face[0][5]==f && c.face[3][1]==r) ||
+        (c.face[0][5]==r && c.face[3][1]==f)) return 0;
+
+    if ((c.face[0][7]==f && c.face[4][1]==r) ||
+        (c.face[0][7]==r && c.face[4][1]==f)) return 1;
+
+    if ((c.face[0][3]==f && c.face[2][1]==r) ||
+        (c.face[0][3]==r && c.face[2][1]==f)) return 2;
+
+    if ((c.face[0][1]==f && c.face[5][1]==r) ||
+        (c.face[0][1]==r && c.face[5][1]==f)) return 3;
+
+    if ((c.face[4][5]==f && c.face[3][3]==r) ||
+        (c.face[4][5]==r && c.face[3][3]==f)) return 4;
+
+    return -1;
+}
+int isFREdgeFlipped(const Cube& c, int pos) {
+    if (pos == 4)
+        return c.face[4][5] != center(c,4);
+    return c.face[0][5] != center(c,4);
+}
+unordered_map<long long, vector<string>> F2L_TABLE = {
+    {0000, {"U","R","U'","R'"}},
+    {0001, {"U'","F'","U","F"}},
+    {0010, {"U","R","U'","R'","U'","F'","U","F"}},
+    {0011, {"U'","F'","U","F","U","R","U'","R'"}},
+    {0100, {"R","U","R'"}},
+    {0101, {"F'","U'","F"}},
+    {4000, {"R","U","R'","U'","R","U","R'"}},
+    {4001, {"F'","U'","F","U","F'","U'","F"}},
+};
+void applyAlg(Cube& c, const vector<string>& alg) {
+    for (auto &m : alg) {
+        if (m=="U") moveU(c);
+        else if (m=="U'") moveUi(c);
+        else if (m=="R") moveR(c);
+        else if (m=="R'") moveRi(c);
+        else if (m=="F") moveF(c);
+        else if (m=="F'") moveFi(c);
+    }
+}
+void solveF2L_FR(Cube& c) {
+    if (FRslotSolved(c)) return;
+
+    F2LState s;
+    s.cornerPos = findFRCornerPos(c);
+    s.edgePos   = findFREdgePos(c);
+    s.cornerOri = (c.face[0][8] == 'W') ? 0 : 1;
+    s.edgeOri   = isFREdgeFlipped(c, s.edgePos);
+
+    long long key = encodeF2L(s);
+
+    if (!F2L_TABLE.count(key)) {
+        cerr << "Unhandled F2L case: " << key << endl;
+        return;
+    }
+
+    applyAlg(c, F2L_TABLE[key]);
+}
+
 void solveF2L(Cube& c) {
     for (int i = 0; i < 4; i++) {
         solveF2L_FR(c);
@@ -487,4 +651,3 @@ int main() {
 
     return 0;
 }
-
